@@ -36,6 +36,31 @@ If we do terraform plan now it will fail, Since we have not configured any of th
 
 <img width="1696" height="598" alt="image" src="https://github.com/user-attachments/assets/ea225936-c4a0-4e95-9fbb-3ffaf061f0fc" />
 
+--------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------
+Terminology:
+
+Policy:
+A document which has permissions. Like list all VPC instances 
+Policies can be directly assigned to a user/roles
+
+Role:
+
+An identity that has set of permissions(thru policies)
+Doesnot have long term creds (username/passwords or access keys)
+     A role is like a uniform. When you "assume" a role, you temporarily wear that uniform and get its permissions.
+
+User:
+Is a real person or application.
+Has long term creds(passwords or access keys)
+Service access ( s3 can talk to Ec2 without access keys)
+
+Roles or User :
+Roles can take temporary permissions
+cross account access
+
+
+
 Now, we need to create a user for this terraform .
 We will create a terraformAdmin group with admin access to that group and add the user.
 
@@ -509,6 +534,292 @@ Policy has this STS- Assume + Adminrole
 
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Installating EC2 Instance :
+
+Concepts:
+
+AMI - Amazon Machine images 
+  It is template which defines us Software categores like OS, pre installed application and certain required  permissions or configs . 
+  Example : Ubuntu OS + Nginx pre installed + Have root previliege, how volume is mounted 
+Instance type 
+  It is Hardware category . Defines Hardware things Memory, Storage, CPU , IOPS etc 
+
+Creating the EC2 Instance :
+
+<img width="1519" height="446" alt="image" src="https://github.com/user-attachments/assets/73c32830-6f30-4b68-9484-d8f54dce1a5b" />
+
+Terraform plan
+
+<img width="1558" height="1040" alt="image" src="https://github.com/user-attachments/assets/abd2665f-920f-4199-921e-51812e22ed71" />
+
+<img width="1476" height="1100" alt="image" src="https://github.com/user-attachments/assets/672b5856-57cb-425a-af95-69b9a07df051" />
+
+Always make sure what it is going to do 
+
+Terraform validate
+  It will validate whether our file /configuration looks correct.
+  Checks if  Terraform configuration files are syntactically valid and internally consistent.
+
+  It does not check with AWS (or any cloud) to see if resources actually exist.
+  It does not download AMIs, subnets, or validate credentials.
+  It does not show you what will be created/changed.
+  
+<img width="1135" height="139" alt="image" src="https://github.com/user-attachments/assets/56e5ff19-e61c-4215-80df-a3b0bb737b63" />
+
+
+Terraform apply
+
+<img width="1868" height="1092" alt="image" src="https://github.com/user-attachments/assets/e5f0fdeb-a4e2-4b37-83d8-65629add26af" />
+
+<img width="1689" height="1000" alt="image" src="https://github.com/user-attachments/assets/acd75d40-b4a4-4bca-91a5-87133b4ba88f" />
+
+It will ask for permission to proceed - YES, Resource will get created 
+
+<img width="1077" height="299" alt="image" src="https://github.com/user-attachments/assets/64964c56-bf7c-4ed4-b389-79b6e93fa3db" />
+
+
+Validation in COnsole:
+
+<img width="1914" height="988" alt="image" src="https://github.com/user-attachments/assets/79e0fbad-69bc-41c3-8ed7-8281dee8ab29" />
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+What happens in Backend now:
+Read Config Files
+1. Terraform init
+   Downloads all the necessary providers
+   Sets up Backend state storage
+
+2.Terraform loads your .tf files.
+Example:
+
+provider "aws" {
+  region = "ap-south-1"
+}
+
+resource "aws_instance" "myec2" {
+  ami           = "ami-0abcdef1234567890"
+  instance_type = "t2.micro"
+}
+
+
+It parses HCL and builds a dependency graph (knows what to create first).
+(e.g., if you had a VPC + EC2, Terraform creates the VPC first).
+
+3. Load Provider Credentials
+
+Terraform checks how to connect to AWS:
+
+From ~/.aws/credentials or ~/.aws/config.
+
+Or AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY environment vars.
+
+Or an assumed IAM role.
+
+Uses these creds to authenticate with AWS APIs.
+
+4. Refresh State
+
+Terraform compares your current state file (terraform.tfstate) with real AWS resources.
+
+If no state exists (first run), Terraform assumes nothing exists yet.
+
+5. Execution Plan
+
+Terraform builds an execution plan:
+
+“Since EC2 doesn’t exist yet, I need to create it.”
+
+Shows you the plan (if you ran terraform plan explicitly).
+
+With terraform apply, it generates the plan and asks for approval:
+
+An execution plan has been generated...
++ aws_instance.myec2 will be created
+
+6. Apply (Actual Creation in AWS)
+
+After you confirm (yes):
+
+Terraform makes an API call to AWS EC2 service via the provider plugin:
+
+POST https://ec2.amazonaws.com/
+Action=RunInstances
+&ImageId=ami-0abcdef1234567890
+&InstanceType=t2.micro
+
+
+AWS processes the request and spins up the EC2 instance.
+
+AWS returns metadata: instance ID, IP, etc.
+
+7. Update State
+
+Terraform writes details into the state file (terraform.tfstate):
+
+{
+  "resources": {
+    "aws_instance.myec2": {
+      "type": "aws_instance",
+      "primary": {
+        "id": "i-0123456789abcdef0",
+        "attributes": {
+          "ami": "ami-0abcdef1234567890",
+          "instance_type": "t2.micro",
+          "public_ip": "13.234.22.10"
+        }
+      }
+    }
+  }
+}
+
+
+This state file is Terraform’s “memory” of what exists in AWS.
+
+8. Success
+
+Terraform prints output:
+
+Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Any chnages to the ec2 instance:
+
+Chnaged the instance type from micro to small
+
+<img width="1509" height="520" alt="image" src="https://github.com/user-attachments/assets/b6cd91cc-84c3-44e9-9e54-44e7921ff7b8" />
+
+Terraform plan
+
+<img width="1889" height="694" alt="image" src="https://github.com/user-attachments/assets/6add7f68-02eb-4c9b-98b2-c43e57a6b04c" />
+
+terraform plan -out instancechnage.txt
+
+<img width="1784" height="770" alt="image" src="https://github.com/user-attachments/assets/2042f752-be04-412e-834a-b0d3d97732b0" />
+
+Terraform apply instancechnage.txt
+
+<img width="1896" height="692" alt="image" src="https://github.com/user-attachments/assets/35483f56-d174-41a8-8252-fd0f6684496c" />
+
+It will stop the excisting instance and chnage to t2.small
+
+<img width="1896" height="692" alt="image" src="https://github.com/user-attachments/assets/1573fc23-0c01-45a6-ace9-a4809931dadc" />
+
+
+In State file it will be recorded
+
+<img width="1501" height="1019" alt="image" src="https://github.com/user-attachments/assets/d4eae6fa-140b-4d61-90e4-abcb4b4c75ad" />
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Target:
+
+In a large scale enterprises, There may be 2 person who are working on the same file for two different resources 
+
+For example , i chnaged my ec2 instance back to t2.micro
+
+<img width="1506" height="481" alt="image" src="https://github.com/user-attachments/assets/d8db640c-892f-4393-af2a-8a467e4c4dd1" />
+
+To apply only those resource 
+
+terraform apply -target aws_instance.ubuntu
+
+<img width="1882" height="874" alt="image" src="https://github.com/user-attachments/assets/b597d0ea-3177-4d1e-8413-f28339f1c450" />
+
+<img width="1280" height="701" alt="image" src="https://github.com/user-attachments/assets/112fdbb8-4186-4974-8cfd-5a672154b5e7" />
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Importing existing ec2 into Terraform :
+
+suppose if you have made chnages in the console. Then we need to import all the modification to the Terraform :
+
+So , i voluntarily go and chnage the ec2 instance type in console
+
+t2.micro to t2.small
+
+<img width="1917" height="961" alt="image" src="https://github.com/user-attachments/assets/2351a3f0-657c-452e-a0ea-42d454f081cf" />
+
+<img width="1902" height="650" alt="image" src="https://github.com/user-attachments/assets/97054178-e03c-451a-b111-e5199df09974" />
+
+Now if we do terraform plan . It will say to migrate from small to micro . Because terraform knows micro is the correct one which is in our file
+
+terraform import aws_instance.ubuntu <corresponding ec2 instance id>
+
+<img width="1250" height="383" alt="image" src="https://github.com/user-attachments/assets/166e54ec-45dd-4bee-a51f-096d4a9fe540" />
+
+
+In this case , we need to take decision to migrate small to micro , or change the file to small
+
+I changed the file 
+<img width="1178" height="380" alt="image" src="https://github.com/user-attachments/assets/ccfa7981-3c98-48d3-9f98-cd2d777cfebb" />
+
+It says no changes
+
+<img width="1269" height="260" alt="image" src="https://github.com/user-attachments/assets/163a5768-67d6-4232-9fb6-e82cb33f400d" />
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+How to remove the ec2 instance from terraform but not destroy:
+
+If we comment out ec2 resource , it will destroy it
+
+<img width="1105" height="430" alt="image" src="https://github.com/user-attachments/assets/54cb1089-8b3d-4980-a785-e7e990c3fa36" />
+
+terraform plan
+<img width="1274" height="921" alt="image" src="https://github.com/user-attachments/assets/66542175-b890-4673-bb49-e24ed4a8bf8a" />
+
+
+So, we shall use terraform state rm aws_instance.ubuntu
+
+<img width="1478" height="127" alt="image" src="https://github.com/user-attachments/assets/772fb89e-c593-4392-9ad6-b2cac31cf44b" />
+
+It will remove the aws_instance from the state file, but resource will be running in AWS
+
+<img width="1844" height="1032" alt="image" src="https://github.com/user-attachments/assets/59d1a575-a948-4ccd-931b-54f77868e46d" />
+
+<img width="1909" height="569" alt="image" src="https://github.com/user-attachments/assets/c8c519e2-7839-4ad9-aae3-c373d38ac279" />
+
+
+If we terraform plan again keeping the aws_instance resources active in files . It will plan to deploy again . So, we can either remove the aws_instance from file or delete the resource from console if not required 
+
+<img width="1896" height="1035" alt="image" src="https://github.com/user-attachments/assets/7b290b78-cd82-4c82-8103-33538ac69f15" />
+
+So, Deleted the instance from AWS console
+
+<img width="1907" height="600" alt="image" src="https://github.com/user-attachments/assets/b3767207-900a-4f54-8ddd-4465911e60e3" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
