@@ -793,6 +793,41 @@ So, Deleted the instance from AWS console
 
 <img width="1907" height="600" alt="image" src="https://github.com/user-attachments/assets/b3767207-900a-4f54-8ddd-4465911e60e3" />
 
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Another important command :
+
+Terraform refresh 
+
+If we created the Ec2 instance using terraform with type=t2.micro using terraform config 
+Then if some one in webconsole chnaging it to t2.small
+
+Now the real-world AWS resource = t2.small,
+but Terraform’s state file still says t2.micro.
+
+
+$terraform refresh
+Terraform queries AWS: “Hey, what’s the actual type of i-123456789?”
+AWS responds: t2.small.
+
+Terraform updates terraform.tfstate -> sets instance_type = t2.small.
+
+Very important -> It UPDATES ONLY STATE FILE . IT WONT TOUCH OUR INFRA OR RESOURCE CONFIG FILE.
+
+Now, 
+AWS Console -> t2.small
+state file -> t2.small
+Terrform resource config -> t2.micro
+
+If we do the terraform plan .
+
+Terraform will try to set the resource to t2.micro . Because it sees the drift between configuration and state file . It goes along with the configuration file.
+
+terraform refresh ---> check the real world and update my state file, don’t touch infra.”
+
+
+
+
 
 
 
