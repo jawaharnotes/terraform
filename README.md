@@ -1,10 +1,10 @@
-# terraform
+# Terraform
 This repo i use to create all basics terraform use cases and its explanation 
 
-What is Terraform ?
+## What is Terraform ?
      Terraform is an Infrastructure as a Code tool , which helps us to create the infrastructure in cloud, onpremises.
 
-Why we need Terraform ?
+## Why we need Terraform ?
       Rather than going and clicking around in UI. Terraform gives us flexibility to maintain the infratructure in our yaml files .
       That gives us the flexibility that we can use for the different env the same set up 
       Helps us to maintain the infrastruture in a files.
@@ -12,16 +12,16 @@ Why we need Terraform ?
       Change Management (Plan & Apply)
 
 
-Important Terminologies :
+# Important Terminologies :
 
-Provider 
+## Provider 
      Providers are the plugins in the terraform which knows how to talk to the corresponding cloud providers( AWS, Azure, Oracle etc)
 
 provider "aws" {
   region = "us-east-1"
 }
 
-Resource
+## Resource
      Resource are the components which we are going to create in the cloud ( Ec2, VPC, Subnets, EIP etc )
      
 resource "aws_instance" "my_ec2" {
@@ -30,7 +30,7 @@ resource "aws_instance" "my_ec2" {
 }
 
 
-Datasource 
+## Datasource 
      Datasource can read the actual components which already exist in cloud and provide us the existing resource details
 
 data "aws_ami" "latest" {
@@ -38,7 +38,7 @@ data "aws_ami" "latest" {
 }
 
 
-Variable
+## Variable
      Variables are inputs to the terraform which we are providing by that required resource are being created ( Name, CIDR range, AZ preferences etc)
      can be resused 
 
@@ -46,7 +46,7 @@ variable "instance_type" {
   default = "t2.micro"
 }
 
-Output 
+## Output 
      Output are the terraform entities which will show us the actual result after the terraform process.
      We can use this for analysis 
      We can pass it as input to another process 
@@ -55,7 +55,7 @@ output "instance_ip" {
   value = aws_instance.my_ec2.public_ip
 }
 
-Module
+## Module
      Modules are the definitions which we are making in the terraform to create the resource 
      collection of resources grouped together.
      Helps reuse code (like functions in programming)
@@ -69,11 +69,11 @@ module "vpc" {
   cidr = "10.0.0.0/16"
 }
 
-Provisioner
+## Provisioner
      Run scripts or commands after resource creation.
      Like installing a application (nginx) after ec2 creation
 
-Flow 
+## Flow 
      WIPAD 
 
 W - Write the file
